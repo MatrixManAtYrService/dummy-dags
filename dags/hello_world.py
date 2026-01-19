@@ -21,7 +21,8 @@ with DAG(
         task = BashOperator(
             task_id=f"hello_{i:02d}",
             bash_command=f'echo "Hello from task {i:02d}!" && sleep 2',
+            pool="stress_test",
         )
         tasks.append(task)
 
-    # All 64 tasks run in parallel (no dependencies between them)
+    # All 64 tasks run in parallel (limited by stress_test pool slots)
