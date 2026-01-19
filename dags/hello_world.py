@@ -1,35 +1,27 @@
 """
-Hello World DAG - confirms git-sync is working.
+Hello World DAG - 64 parallel tasks to stress test Celery.
 """
 from datetime import datetime
 
 from airflow import DAG
 from airflow.operators.bash import BashOperator
-from airflow.operators.python import PythonOperator
-
-
-def print_hello():
-    print("Hello from git-synced DAG!")
-    return "Hello World"
 
 
 with DAG(
     dag_id="hello_world",
-    description="A simple DAG to verify git-sync is working",
+    description="64 parallel bash tasks to test Celery queuing",
     start_date=datetime(2024, 1, 1),
     schedule_interval=None,  # Manual trigger only
     catchup=False,
-    tags=["example", "git-sync"],
+    tags=["example", "stress-test"],
 ) as dag:
 
-    hello_bash = BashOperator(
-        task_id="hello_bash",
-        bash_command='echo "Hello from BashOperator! DAG synced from git."',
-    )
+    tasks = []
+    for i in range(64):
+        task = BashOperator(
+            task_id=f"hello_{i:02d}",
+            bash_command=f'echo "Hello from task {i:02d}!" && sleep 2',
+        )
+        tasks.append(task)
 
-    hello_python = PythonOperator(
-        task_id="hello_python",
-        python_callable=print_hello,
-    )
-
-    hello_bash >> hello_python
+    # All 64 tasks run in parallel (no dependencies between them)
