@@ -1,0 +1,17 @@
+{
+  "multiples-of-ten": {
+    "slots": 10,
+    "description": "Tasks for multiples of 10",
+    "include_deferred": false
+  },
+  "multiples-of-three": {
+    "slots": 8,
+    "description": "Tasks for multiples of 3",
+    "include_deferred": false
+  },
+  "everything-else": {
+    "slots": 4,
+    "description": "Tasks for everything else",
+    "include_deferred": false
+  }
+}
