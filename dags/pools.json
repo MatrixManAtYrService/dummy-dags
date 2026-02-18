@@ -1,17 +1,17 @@
 {
-  "multiples-of-ten": {
+  "0mod3_size15": {
+    "slots": 15,
+    "description": "Tasks where task_num % 3 == 0",
+    "include_deferred": false
+  },
+  "1mod3_size10": {
     "slots": 10,
-    "description": "Tasks for multiples of 10",
+    "description": "Tasks where task_num % 3 == 1",
     "include_deferred": false
   },
-  "multiples-of-three": {
-    "slots": 8,
-    "description": "Tasks for multiples of 3",
-    "include_deferred": false
-  },
-  "everything-else": {
-    "slots": 4,
-    "description": "Tasks for everything else",
+  "2mod3_size5": {
+    "slots": 5,
+    "description": "Tasks where task_num % 3 == 2",
     "include_deferred": false
   }
 }

@@ -1,6 +1,6 @@
 """
 Hello World DAG - 64 parallel tasks with random memory/duration for dashboard testing.
-Tasks are distributed across three pools based on their number.
+Tasks are distributed across three pools based on task_num % 3.
 """
 import random
 import time
@@ -11,14 +11,17 @@ from airflow.operators.python import PythonOperator
 from kubernetes.client import models as k8s
 
 
+# Pool definitions: task_num % 3 determines pool
+POOLS = {
+    0: "0mod3_size15",  # 15 slots
+    1: "1mod3_size10",  # 10 slots
+    2: "2mod3_size5",   # 5 slots
+}
+
+
 def get_pool_for_task(task_num: int) -> str:
-    """Determine which pool a task belongs to based on its number."""
-    if task_num % 10 == 0 and task_num > 0:
-        return "multiples-of-ten"
-    elif task_num % 3 == 0 and task_num > 0:
-        return "multiples-of-three"
-    else:
-        return "everything-else"
+    """Determine which pool a task belongs to based on task_num % 3."""
+    return POOLS[task_num % 3]
 
 
 def make_executor_config(pool_name: str) -> dict:
@@ -55,7 +58,7 @@ def random_load(task_id: str):
 
 with DAG(
     dag_id="hello_world",
-    description="64 parallel tasks distributed across three pools",
+    description="64 parallel tasks distributed across three pools by mod 3",
     start_date=datetime(2024, 1, 1),
     schedule_interval=None,  # Manual trigger only
     catchup=False,
@@ -74,7 +77,7 @@ with DAG(
         )
         tasks.append(task)
 
-    # All 64 tasks run in parallel (limited by pool slots)
-    # - multiples-of-ten: 10, 20, 30, 40, 50, 60 (6 tasks, 10 slots)
-    # - multiples-of-three: 3, 6, 9, 12, 15, 18, 21, 24, 27, 33, 36, 39, 42, 45, 48, 51, 54, 57, 63 (19 tasks, 8 slots)
-    # - everything-else: 0, 1, 2, 4, 5, 7, 8, 11, 13, 14, 16, 17, 19, 22, 23, 25, 26, 28, 29, 31, 32, 34, 35, 37, 38, 41, 43, 44, 46, 47, 49, 52, 53, 55, 56, 58, 59, 61, 62 (39 tasks, 4 slots)
+    # Task distribution:
+    # - 0mod3_size15: 0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57,60,63 (22 tasks, 15 slots)
+    # - 1mod3_size10: 1,4,7,10,13,16,19,22,25,28,31,34,37,40,43,46,49,52,55,58,61 (21 tasks, 10 slots)
+    # - 2mod3_size5:  2,5,8,11,14,17,20,23,26,29,32,35,38,41,44,47,50,53,56,59,62 (21 tasks, 5 slots)
