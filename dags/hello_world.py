@@ -11,8 +11,8 @@ from airflow.operators.python import PythonOperator
 
 def random_load(task_id: str):
     """Allocate random memory and hold it for random duration."""
-    # Random memory: 0-10MB
-    mem_mb = random.uniform(0, 10)
+    # Random memory: 0-512MB
+    mem_mb = random.uniform(0, 512)
     mem_bytes = int(mem_mb * 1024 * 1024)
 
     # Random duration: 15s-2m
