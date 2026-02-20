@@ -1,15 +1,15 @@
 """
-Hello World DAG - 64 parallel tasks with random memory/duration for dashboard testing.
+Hello World DAG - 64 parallel tasks calling the dummy greeting service.
 Tasks are distributed across three pools based on task_num % 3.
 """
-import random
-import time
 from datetime import datetime
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from kubernetes.client import models as k8s
 
+
+DUMMY_SERVER_URL = "http://dummy-server:8080"
 
 # Pool definitions: task_num % 3 determines pool
 POOLS = {
@@ -35,34 +35,23 @@ def make_executor_config(pool_name: str) -> dict:
     }
 
 
-def random_load(task_id: str):
-    """Allocate random memory and hold it for random duration."""
-    # Random memory: 0-512MB
-    mem_mb = random.uniform(0, 512)
-    mem_bytes = int(mem_mb * 1024 * 1024)
+def call_greeting_service(task_num: str):
+    """Call the dummy greeting service via the client library."""
+    from airflow_client_lib.client import greet
 
-    # Random duration: 15s-2m
-    duration = random.uniform(15, 120)
-
-    print(f"Task {task_id}: Allocating {mem_mb:.2f}MB for {duration:.1f}s")
-
-    # Allocate memory and hold it
-    data = bytearray(mem_bytes)
-    # Touch the memory to ensure it's actually allocated
-    for i in range(0, len(data), 4096):
-        data[i] = 1
-
-    time.sleep(duration)
-    print(f"Task {task_id}: Done")
+    name = f"hello_{task_num}"
+    print(f"Task {task_num}: calling {DUMMY_SERVER_URL} with name={name}")
+    greeting = greet(DUMMY_SERVER_URL, name)
+    print(f"Task {task_num}: got response: {greeting}")
 
 
 with DAG(
     dag_id="hello_world",
-    description="64 parallel tasks distributed across three pools by mod 3",
+    description="64 parallel tasks calling the dummy greeting service via client lib",
     start_date=datetime(2024, 1, 1),
     schedule_interval=None,  # Manual trigger only
     catchup=False,
-    tags=["example", "stress-test"],
+    tags=["example", "service-test"],
 ) as dag:
 
     tasks = []
@@ -70,14 +59,9 @@ with DAG(
         pool_name = get_pool_for_task(i)
         task = PythonOperator(
             task_id=f"hello_{i:02d}",
-            python_callable=random_load,
+            python_callable=call_greeting_service,
             op_args=[f"{i:02d}"],
             pool=pool_name,
             executor_config=make_executor_config(pool_name),
         )
         tasks.append(task)
-
-    # Task distribution:
-    # - 0mod3_size15: 0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57,60,63 (22 tasks, 15 slots)
-    # - 1mod3_size10: 1,4,7,10,13,16,19,22,25,28,31,34,37,40,43,46,49,52,55,58,61 (21 tasks, 10 slots)
-    # - 2mod3_size5:  2,5,8,11,14,17,20,23,26,29,32,35,38,41,44,47,50,53,56,59,62 (21 tasks, 5 slots)
