@@ -9,8 +9,6 @@ from airflow.operators.python import PythonOperator
 from kubernetes.client import models as k8s
 
 
-DUMMY_SERVER_URL = "http://dummy-server:8080"
-
 # Pool definitions: task_num % 3 determines pool
 POOLS = {
     0: "0mod3_size15",  # 15 slots
@@ -37,11 +35,12 @@ def make_executor_config(pool_name: str) -> dict:
 
 def call_greeting_service(task_num: str):
     """Call the dummy greeting service via the client library."""
-    from airflow_client_lib.client import greet
+    from airflow_client_lib.client import get_base_url, greet
 
+    base_url = get_base_url("dummy_server")
     name = f"hello_{task_num}"
-    print(f"Task {task_num}: calling {DUMMY_SERVER_URL} with name={name}")
-    greeting = greet(DUMMY_SERVER_URL, name)
+    print(f"Task {task_num}: calling {base_url} with name={name}")
+    greeting = greet(base_url, name)
     print(f"Task {task_num}: got response: {greeting}")
 
 
